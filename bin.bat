@@ -1,4 +1,5 @@
 @echo off
+setlocal
 
 set "MY_TMP=%TEMP%\bin"
 if defined TMP set "MY_TMP=%TMP%\bin"
@@ -15,7 +16,7 @@ for /l %%I in (1,1,25) do call :write_bin %%I
 for /l %%I in (27,1,255) do call :write_bin %%I
 mode con cp select=%cp% >nul
 
-call :check_bin_all || echo ERROR: check_bin_all failed>&2& exit /b 1
+call :check_bin_all || (echo ERROR: check_bin_all failed>&2& exit /b 1)
 popd
 
 goto :EOF
