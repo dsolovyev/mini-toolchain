@@ -9,9 +9,10 @@ mkdir "%MY_TMP%"
 pushd "%MY_TMP%"
 for /f "tokens=*" %%A in ('chcp') do for %%B in (%%A) do set "cp=%%~nB"
 mode con cp select=437>nul
-for /l %%I in (0,1,255) do (
-    call :print_bin %%I
-)
+call :write_bin 0
+call :write_bin 26
+for /l %%I in (1,1,25) do call :write_bin %%I
+for /l %%I in (27,1,255) do call :write_bin %%I
 mode con cp select=%cp% >nul
 
 call :check_bin_all || echo ERROR: check_bin_all failed>&2& exit /b 1
@@ -41,45 +42,50 @@ goto :EOF
     if %b%==15 set b=F
 exit /b 0
 
-:print_bin
+:write_bin
     setlocal
 
-    if %~1 equ 0 goto :print_bin__null
-    if %~1 equ 10 goto :print_bin__lf
-    if %~1 equ 13 goto :print_bin__cr
-    if %~1 equ 34 goto :print_bin__quote
-    if %~1 equ 61 goto :print_bin__equals
+    if %~1 equ 0 goto :write_bin__null
+    if %~1 equ 10 goto :write_bin__cr_or_lf
+    if %~1 equ 13 goto :write_bin__cr_or_lf
+    if %~1 equ 34 goto :write_bin__quote
+    if %~1 equ 61 goto :write_bin__hard
+    if %~1 neq 26 if %~1 leq 32 goto :write_bin__hard
+    if %~1 gtr 127 goto :write_bin__hard
         call :byte2hex %1
         forfiles /p . /m bin_00.tmp /c "cmd /d /c (set /p=^0x%b%%a%)>bin_%b%%a%.tmp"<nul >nul
-        goto :print_bin__end_switch
-    :print_bin__null
+        exit /b
+    :write_bin__null
         del bin_00.tmp >nul 2>&1
         fsutil file createnew bin_00.tmp 1 >nul
-        goto :print_bin__end_switch
-    :print_bin__lf
-        setlocal enabledelayedexpansion
-(set LF=^
+        exit /b
+    :write_bin__cr_or_lf
+        call :byte2hex %1
+    setlocal enabledelayedexpansion
+    if %~1 equ 10 goto :write_bin__cr_or_lf_LF
+for /f %%a in ('copy /z "%~dpf0" nul') do set "CR_OR_LF=%%a"
+goto :write_bin__cr_or_lf_CRdone
+    :write_bin__cr_or_lf_LF
+(set CR_OR_LF=^
 %=EMPTY=%
 )
-        set /p=!LF!<nul>bin_0A.tmp
-        endlocal
-        goto :print_bin__end_switch
-    :print_bin__cr
-        setlocal enabledelayedexpansion
-        for /f %%a in ('copy /z "%~dpf0" nul') do set "CR=%%a"
-        set /p=!CR!<nul>bin_0D.tmp
-        endlocal
-        goto :print_bin__end_switch
-    :print_bin__quote
+    :write_bin__cr_or_lf_CRdone
+    set /p=_!CR_OR_LF!<nul>bin_%b%%a%_5F%b%%a%.tmp
+    endlocal
+        copy /y /b bin_%b%%a%_5F%b%%a%.tmp+bin_1A.tmp bin_%b%%a%_5F%b%%a%1A.tmp>nul
+        del bin_%b%%a%_5F%b%%a%.tmp >nul 2>&1
+        goto :write_bin__hard__take_middle_byte
+    :write_bin__quote
         set /p=^"^"^"<nul>bin_22.tmp
-        goto :print_bin__end_switch
-    :print_bin__equals
+        exit /b
+    :write_bin__hard
         :: pause & copy are from "makecab" solution
-        forfiles /p . /m bin_00.tmp /c "cmd /d /c (set /p=_=^0x1A)>bin_3D_5F3D1A.tmp"<nul >nul
-        type bin_3D_5F3D1A.tmp| (pause>nul& findstr "=">bin_3D_3D1A0A0D.tmp)
-        copy /y bin_3D_3D1A0A0D.tmp /a bin_3D.tmp /b>nul
-        del bin_3D_5F3D1A.tmp bin_3D_3D1A0A0D.tmp
-    :print_bin__end_switch
+        call :byte2hex %1
+        forfiles /p . /m bin_00.tmp /c "cmd /d /c (set /p=_^0x%b%%a%0x1A)>bin_%b%%a%_5F%b%%a%1A.tmp"<nul >nul
+        :write_bin__hard__take_middle_byte
+        type bin_%b%%a%_5F%b%%a%1A.tmp| (pause>nul& findstr "^">bin_%b%%a%_%b%%a%1A0A0D.tmp)
+        copy /y bin_%b%%a%_%b%%a%1A0A0D.tmp /a bin_%b%%a%.tmp /b>nul
+        del bin_%b%%a%_5F%b%%a%1A.tmp bin_%b%%a%_%b%%a%1A0A0D.tmp >nul 2>&1
 exit /b
 
 
