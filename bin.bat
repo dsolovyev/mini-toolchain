@@ -5,8 +5,8 @@ set "MY_TMP=%TEMP%\bin"
 if defined TMP set "MY_TMP=%TMP%\bin"
 if exist "%MY_TMP%" rd /s /q "%MY_TMP%"
 mkdir "%MY_TMP%"
+compact /c /s:"%MY_TMP%">nul 2>&1
 
-::forfiles /p "%~dp0." /m "%~nx0" /c "cmd /c echo(%arg1%"
 pushd "%MY_TMP%"
 for /f "tokens=*" %%A in ('chcp') do for %%B in (%%A) do set "cp=%%~nB"
 mode con cp select=437>nul
@@ -20,11 +20,7 @@ call :check_bin_all || (echo ERROR: check_bin_all failed>&2& exit /b 1)
 popd
 
 goto :EOF
-::set result
 
-::set /p="set/p"<nul
-::set /p="set/p"<nul
-::set /p="set/p"<nul
 
 :byte2hex
     set /a a=%~1^&15
@@ -46,15 +42,28 @@ exit /b 0
 :write_bin
     setlocal
 
+    :: \0
     if %~1 equ 0 goto :write_bin__null
+    :: \n,\r
     if %~1 equ 10 goto :write_bin__cr_or_lf
     if %~1 equ 13 goto :write_bin__cr_or_lf
+    :: "
     if %~1 equ 34 goto :write_bin__quote
+    :: =
     if %~1 equ 61 goto :write_bin__hard
-    if %~1 neq 26 if %~1 leq 32 goto :write_bin__hard
+    :: <end-of-text-file>, can't be written using write_bin__hard nor via %=ExitCodeAscii%
+    if %~1 equ 26 goto :write_bin__tolerably
+    if %~1 leq 32 goto :write_bin__hard
     if %~1 gtr 127 goto :write_bin__hard
+    if %~1 equ 127 goto :write_bin__tolerably
         call :byte2hex %1
-        forfiles /p . /m bin_00.tmp /c "cmd /d /c (set /p=^0x%b%%a%)>bin_%b%%a%.tmp"<nul >nul
+        cmd /d /c exit %~1
+        call set "ascii_char=%%=ExitCodeAscii%%"
+        set /p="%ascii_char%">bin_%b%%a%.tmp<nul
+        exit /b
+    :write_bin__tolerably
+        call :byte2hex %1
+        forfiles /p . /m bin_00.tmp /c "cmd /v:off /d /c (set /p=^0x%b%%a%)>bin_%b%%a%.tmp"<nul >nul
         exit /b
     :write_bin__null
         del bin_00.tmp >nul 2>&1
@@ -82,7 +91,7 @@ goto :write_bin__cr_or_lf_CRdone
     :write_bin__hard
         :: pause & copy are from "makecab" solution
         call :byte2hex %1
-        forfiles /p . /m bin_00.tmp /c "cmd /d /c (set /p=_^0x%b%%a%0x1A)>bin_%b%%a%_5F%b%%a%1A.tmp"<nul >nul
+        forfiles /p . /m bin_00.tmp /c "cmd /v:off /d /c (set /p=_^0x%b%%a%0x1A)>bin_%b%%a%_5F%b%%a%1A.tmp"<nul >nul
         :write_bin__hard__take_middle_byte
         type bin_%b%%a%_5F%b%%a%1A.tmp| (pause>nul& findstr "^">bin_%b%%a%_%b%%a%1A0A0D.tmp)
         copy /y bin_%b%%a%_%b%%a%1A0A0D.tmp /a bin_%b%%a%.tmp /b>nul
