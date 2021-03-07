@@ -24,19 +24,36 @@ goto :EOF
 
 :byte2hex
     set /a a=%~1^&15
-    if %a%==10 set a=A
-    if %a%==11 set a=B
-    if %a%==12 set a=C
-    if %a%==13 set a=D
-    if %a%==14 set a=E
-    if %a%==15 set a=F
+    if %a% leq 9 goto :byte2hex_b
+    goto :byte2hex_a_%a%
+    :byte2hex_a_10
+        set a=A& goto :byte2hex_b
+    :byte2hex_a_11
+        set a=B& goto :byte2hex_b
+    :byte2hex_a_12
+        set a=C& goto :byte2hex_b
+    :byte2hex_a_13
+        set a=D& goto :byte2hex_b
+    :byte2hex_a_14
+        set a=E& goto :byte2hex_b
+    :byte2hex_a_15
+        set a=F& goto :byte2hex_b
+    :byte2hex_b
     set /a b=(%~1^>^>4)^&15
-    if %b%==10 set b=A
-    if %b%==11 set b=B
-    if %b%==12 set b=C
-    if %b%==13 set b=D
-    if %b%==14 set b=E
-    if %b%==15 set b=F
+    if %b% leq 9 exit /b 0
+    goto :byte2hex_b_%b%
+    :byte2hex_b_10
+        set b=A& exit /b 0
+    :byte2hex_b_11
+        set b=B& exit /b 0
+    :byte2hex_b_12
+        set b=C& exit /b 0
+    :byte2hex_b_13
+        set b=D& exit /b 0
+    :byte2hex_b_14
+        set b=E& exit /b 0
+    :byte2hex_b_15
+        set b=F& exit /b 0
 exit /b 0
 
 :write_bin
