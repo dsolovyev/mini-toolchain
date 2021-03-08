@@ -1,9 +1,13 @@
 @echo off
-setlocal
+setlocal disabledelayedexpansion
 
-set "MY_TMP=%TEMP%\bin"
-if defined TMP set "MY_TMP=%TMP%\bin"
-if exist "%MY_TMP%" rd /s /q "%MY_TMP%"
+if not defined MY_TMP echo ERROR: %%MY_TMP%% is not defined>&2& exit /b 1
+
+if not exist "%MY_TMP%" goto :make_tmp
+    ::TODO fast check (.stamp file)
+    ::rd /s /q "%MY_TMP%"
+    exit /b 0
+:make_tmp
 mkdir "%MY_TMP%"
 compact /c /s:"%MY_TMP%">nul 2>&1
 
