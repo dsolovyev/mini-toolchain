@@ -7,5 +7,6 @@ build_script:
   - ver
 
 test_script:
+  - cmd /c call datetime\cdate.test.bat
   - cmd /c call .\link.bat
-  - .\out.exe & exit 0
+  - cmd /c .\out.exe& exit 0
