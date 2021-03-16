@@ -7,7 +7,6 @@ if not defined timebias_type set timebias=
 if /i not "%timebias_type%" == "reg_dword" set timebias=
 if not defined timebias echo ERROR: can't read HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\TimeZoneInformation\ActiveTimeBias>&2&exit /b 1
 
-set timebias=0x9fffff85
 set /a first_hex_digit=%timebias:~0,3%
 if %first_hex_digit% gtr 7 if not "%timebias:~9,1%"=="" set /a timebias=(first_hex_digit ^<^< 28) ^| 0x%timebias:~3%& goto :to_exit
     set /a timebias=%timebias%

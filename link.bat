@@ -96,6 +96,18 @@ rem      } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
 ::#define IMAGE_FILE_MACHINE_AMD64             0x8664
 
 
+setlocal
+:loop_cur_datetime
+    call "%~dp0datetime\timebias.bat"|| (echo ERROR: datetime\timebias.bat failed>&2& exit /b 1)
+    set "timebias_old=%timebias%"
+    call "%~dp0datetime\current.bat"|| (echo ERROR: datetime\current.bat failed>&2& exit /b 1)
+    call "%~dp0datetime\timebias.bat"|| (echo ERROR: datetime\timebias.bat failed>&2& exit /b 1)
+    if not "%timebias_old%" == "%timebias%" goto :loop_cur_datetime
+
+call "%~dp0datetime\cdate.bat" %cur_year% %cur_month% %cur_day% %cur_hour% %cur_minute% %cur_second%|| (echo ERROR: datetime\cdate.bat failed>&2& exit /b 1)
+set /a cdate+=(%timebias%)*60
+call "%~dp0conversion\int_to_hex4le.bat" %cdate%
+endlocal& set "hex_datetime_stamp=%result%"
 
 rem     typedef struct _IMAGE_NT_HEADERS {
 rem 00:    DWORD Signature;
@@ -107,7 +119,7 @@ set "output_buffer=%output_buffer% 4c 01" & rem I386
 rem 06:        WORD    NumberOfSections;
 set "output_buffer=%output_buffer% 00 00"
 rem 08:        DWORD   TimeDateStamp;
-set "output_buffer=%output_buffer% 00 00 00 00"
+set "output_buffer=%output_buffer% %hex_datetime_stamp%"
 rem 0C:        DWORD   PointerToSymbolTable;
 set "output_buffer=%output_buffer% 00 00 00 00"
 rem 10:        DWORD   NumberOfSymbols;
