@@ -8,5 +8,6 @@ build_script:
 
 test_script:
   - cmd /c call datetime\cdate.test.bat
+  - cmd /c call conversion\int_to_hex4le.test.bat
   - cmd /c call .\link.bat
   - cmd /c .\out.exe& exit 0
