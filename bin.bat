@@ -27,7 +27,7 @@ goto :EOF
 
 
 :byte2hex
-    set /a a=%~1^&15
+    set /a "a=%~1 & 15"
     if %a% leq 9 goto :byte2hex_b
     goto :byte2hex_a_%a%
     :byte2hex_a_10
@@ -43,7 +43,7 @@ goto :EOF
     :byte2hex_a_15
         set a=F& goto :byte2hex_b
     :byte2hex_b
-    set /a b=(%~1^>^>4)^&15
+    set /a "b=%~1>>4 & 15"
     if %b% leq 9 exit /b 0
     goto :byte2hex_b_%b%
     :byte2hex_b_10
@@ -132,6 +132,6 @@ exit /b
 
         fc /b bin_00.tmp bin_%b%%a%.tmp| findstr /r /c:"^00000000: 00 %b%%a%$">nul|| (echo ERROR: bad data in bin_%b%%a%.tmp>&2& set res=1)
         :check_bin_all__next
-        set /a i=i+1
+        set /a i+=1
     if %i% leq 255 goto :check_bin_all__loop
 exit /b %res%

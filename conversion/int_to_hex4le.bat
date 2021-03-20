@@ -1,33 +1,32 @@
 setlocal
     set "x=%~1"
-    if "%~1" == "-2147483648" set "x=(-2147483647-1)"
 
-    set /a y="%x% & 15"
+    set /a "y=x & 15"
     call :digit %y%
     set a=%hex%
-    set /a y="%x%>>4 & 15"
+    set /a "y=x>>4 & 15"
     call :digit %y%
     set a=%hex%%a%
 
-    set /a y="%x%>>8 & 15"
+    set /a "y=x>>8 & 15"
     call :digit %y%
     set b=%hex%
-    set /a y="%x%>>12 & 15"
+    set /a "y=x>>12 & 15"
     call :digit %y%
     set b=%hex%%b%
 
 
-    set /a y="%x%>>16 & 15"
+    set /a "y=x>>16 & 15"
     call :digit %y%
     set c=%hex%
-    set /a y="%x%>>20 & 15"
+    set /a "y=x>>20 & 15"
     call :digit %y%
     set c=%hex%%c%
 
-    set /a y="%x%>>24 & 15"
+    set /a "y=x>>24 & 15"
     call :digit %y%
     set d=%hex%
-    set /a y="%x%>>28 & 15"
+    set /a "y=x>>28 & 15"
     call :digit %y%
     set d=%hex%%d%
 endlocal& set "result=%a% %b% %c% %d%"

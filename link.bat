@@ -105,7 +105,7 @@ setlocal
     if not "%timebias_old%" == "%timebias%" goto :loop_cur_datetime
 
 call "%~dp0datetime\cdate.bat" %cur_year% %cur_month% %cur_day% %cur_hour% %cur_minute% %cur_second%|| (echo ERROR: datetime\cdate.bat failed>&2& exit /b 1)
-set /a cdate+=(%timebias%)*60
+set /a cdate+=timebias*60
 call "%~dp0conversion\int_to_hex4le.bat" %cdate%
 endlocal& set "hex_datetime_stamp=%result%"
 
