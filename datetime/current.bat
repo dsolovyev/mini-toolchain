@@ -1,5 +1,6 @@
 setlocal
-pushd "%MY_TMP%"
+call "%~dp0..\fs\mktemp_dir.bat" current_datetime_|| exit /b 1
+pushd "%result%"|| exit /b 1
 makecab /d RptFileName=cur_datetime.rpt /d InfFileName=cur_datetime.inf /f nul>nul
 set cur_year=
 set cur_the_rest=
@@ -16,6 +17,7 @@ for /f "tokens=4-9* delims=: "eol^= %%A in (cur_datetime.rpt) do (
 :first_line_is_needed_only
 del cur_datetime.rpt cur_datetime.inf>nul
 popd
+rd /s /q "%result%">nul
 
 if defined cur_the_rest echo ERROR: bad datetime format>&2& exit /b 1
 if not defined cur_year echo ERROR: bad datetime format>&2& exit /b 1
