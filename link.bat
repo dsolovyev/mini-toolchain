@@ -4,7 +4,7 @@ setlocal enabledelayedexpansion enableextensions
 set "MY_TMP=%TEMP%\bin"
 if defined TMP set "MY_TMP=%TMP%\bin"
 
-call "%~dp0bin.bat" || (echo ERROR: "%~dp0bin.bat" failed>&2& exit /b 1)
+call "%~dp0binary\create_template_bytes.bat" || (echo ERROR: "%~dp0binary\create_template_bytes.bat" failed>&2& exit /b 1)
 
 echo on
 
