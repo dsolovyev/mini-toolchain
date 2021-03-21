@@ -1,17 +1,30 @@
-@echo off
 setlocal disabledelayedexpansion
 
-if not defined MY_TMP echo ERROR: %%MY_TMP%% is not defined>&2& exit /b 1
+if not defined MINI_TOOLCHAIN_TMP echo ERROR: %%MINI_TOOLCHAIN_TMP%% is not defined>&2& exit /b 1
+pushd "%MINI_TOOLCHAIN_TMP%"||exit /b 1
 
-if not exist "%MY_TMP%" goto :make_tmp
-    ::TODO fast check (.stamp file)
-    ::rd /s /q "%MY_TMP%"
-    exit /b 0
-:make_tmp
-mkdir "%MY_TMP%"
-compact /c /s:"%MY_TMP%">nul 2>&1
+set nothing_to_do=0
+call "%~dp0..\fs\lock.bat" --acquire bin.lock|| exit /b 1
+    if exist bin (
+        if exist bin\_.ok (set nothing_to_do=1) else (set nothing_to_do=2)
+    ) else (
+        md bin
+        (if 1 == 0 echo.)>bin\_.do
+    )
+call "%~dp0..\fs\lock.bat" --release bin.lock|| exit /b 1
 
-pushd "%MY_TMP%"
+if %nothing_to_do% equ 1 popd& exit /b 0
+
+if %nothing_to_do% equ 0 goto :do_it
+    :loop_wait_other_instance
+    if exist bin\_.do goto :loop_wait_other_instance
+
+    if exist bin\_.ok popd& exit /b 0
+    echo ERROR: "%MINI_TOOLCHAIN_TMP%\bin" exists but there is no "_.ok" in it>&2
+    exit /b 1
+:do_it
+
+pushd bin|| (del bin\_.do& exit /b 1)
 for /f "tokens=*" %%A in ('chcp') do for %%B in (%%A) do set "cp=%%~nB"
 mode con cp select=437>nul
 call :write_bin 0
@@ -20,10 +33,13 @@ for /l %%I in (1,1,25) do call :write_bin %%I
 for /l %%I in (27,1,255) do call :write_bin %%I
 mode con cp select=%cp% >nul
 
-call :check_bin_all || (echo ERROR: check_bin_all failed>&2& exit /b 1)
+call :check_bin_all || (del _.do& echo ERROR: check_bin_all failed>&2& exit /b 1)
+(if 1 == 0 echo.)>_.ok
+del _.do
+popd
 popd
 
-goto :EOF
+exit /b 0
 
 
 :byte2hex
@@ -80,15 +96,15 @@ exit /b 0
         call :byte2hex %1
         cmd /d /c exit %~1
         call set "ascii_char=%%=ExitCodeAscii%%"
-        set /p="%ascii_char%">bin_%b%%a%.tmp<nul
+        set /p="%ascii_char%">%b%%a%.tmp<nul
         exit /b
     :write_bin__tolerably
         call :byte2hex %1
-        forfiles /p . /m bin_00.tmp /c "cmd /v:off /d /c (set /p=^0x%b%%a%)>bin_%b%%a%.tmp"<nul >nul
+        forfiles /p . /m 00.tmp /c "cmd /v:off /d /c (set /p=^0x%b%%a%)>%b%%a%.tmp"<nul >nul
         exit /b
     :write_bin__null
-        del bin_00.tmp >nul 2>&1
-        fsutil file createnew bin_00.tmp 1 >nul
+        del 00.tmp >nul 2>&1
+        fsutil file createnew 00.tmp 1 >nul
         exit /b
     :write_bin__cr_or_lf
         call :byte2hex %1
@@ -101,22 +117,22 @@ goto :write_bin__cr_or_lf_CRdone
 %=EMPTY=%
 )
     :write_bin__cr_or_lf_CRdone
-    set /p=_!CR_OR_LF!<nul>bin_%b%%a%_5F%b%%a%.tmp
+    set /p=_!CR_OR_LF!<nul>%b%%a%_5F%b%%a%.tmp
     endlocal
-        copy /y /b bin_%b%%a%_5F%b%%a%.tmp+bin_1A.tmp bin_%b%%a%_5F%b%%a%1A.tmp>nul
-        del bin_%b%%a%_5F%b%%a%.tmp >nul 2>&1
+        copy /y /b %b%%a%_5F%b%%a%.tmp+1A.tmp %b%%a%_5F%b%%a%1A.tmp>nul
+        del %b%%a%_5F%b%%a%.tmp >nul 2>&1
         goto :write_bin__hard__take_middle_byte
     :write_bin__quote
-        set /p=^"^"^"<nul>bin_22.tmp
+        set /p=^"^"^"<nul>22.tmp
         exit /b
     :write_bin__hard
         :: pause & copy are from "makecab" solution
         call :byte2hex %1
-        forfiles /p . /m bin_00.tmp /c "cmd /v:off /d /c (set /p=_^0x%b%%a%0x1A)>bin_%b%%a%_5F%b%%a%1A.tmp"<nul >nul
+        forfiles /p . /m 00.tmp /c "cmd /v:off /d /c (set /p=_^0x%b%%a%0x1A)>%b%%a%_5F%b%%a%1A.tmp"<nul >nul
         :write_bin__hard__take_middle_byte
-        type bin_%b%%a%_5F%b%%a%1A.tmp| (pause>nul& findstr "^">bin_%b%%a%_%b%%a%1A0A0D.tmp)
-        copy /y bin_%b%%a%_%b%%a%1A0A0D.tmp /a bin_%b%%a%.tmp /b>nul
-        del bin_%b%%a%_5F%b%%a%1A.tmp bin_%b%%a%_%b%%a%1A0A0D.tmp >nul 2>&1
+        type %b%%a%_5F%b%%a%1A.tmp| (pause>nul& findstr "^">%b%%a%_%b%%a%1A0A0D.tmp)
+        copy /y %b%%a%_%b%%a%1A0A0D.tmp /a %b%%a%.tmp /b>nul
+        del %b%%a%_5F%b%%a%1A.tmp %b%%a%_%b%%a%1A0A0D.tmp >nul 2>&1
 exit /b
 
 
@@ -127,10 +143,10 @@ exit /b
     :check_bin_all__loop
         call :byte2hex %i%
         (
-            dir "bin_%b%%a%.tmp"2>nul|| echo ERROR: cannot find bin_%b%%a%.tmp>&2
-        ) | findstr /r /c:"1 bin_%b%%a%\.tmp$">nul|| ((echo ERROR: bin_%b%%a%.tmp size != 1)>&2& set res=1& goto :check_bin_all__next)
+            dir "%b%%a%.tmp"2>nul|| echo ERROR: cannot find %b%%a%.tmp>&2
+        ) | findstr /r /c:"1 %b%%a%\.tmp$">nul|| ((echo ERROR: %b%%a%.tmp size != 1)>&2& set res=1& goto :check_bin_all__next)
 
-        fc /b bin_00.tmp bin_%b%%a%.tmp| findstr /r /c:"^00000000: 00 %b%%a%$">nul|| (echo ERROR: bad data in bin_%b%%a%.tmp>&2& set res=1)
+        fc /b 00.tmp %b%%a%.tmp| findstr /r /c:"^00000000: 00 %b%%a%$">nul|| (echo ERROR: bad data in %b%%a%.tmp>&2& set res=1)
         :check_bin_all__next
         set /a i+=1
     if %i% leq 255 goto :check_bin_all__loop

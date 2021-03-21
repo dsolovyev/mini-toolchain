@@ -1,8 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion enableextensions
 
-set "MY_TMP=%TEMP%\bin"
-if defined TMP set "MY_TMP=%TMP%\bin"
+call "%~dp0fs\init_global_tmp.bat" || (echo ERROR: "%~dp0fs\init_global_tmp.bat" failed>&2& exit /b 1)
 
 call "%~dp0binary\create_template_bytes.bat" || (echo ERROR: "%~dp0binary\create_template_bytes.bat" failed>&2& exit /b 1)
 
@@ -134,7 +133,7 @@ rem    } IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;
 
 
 
-::copy /y /b "%MY_TMP%\bin_4D.tmp"+"%MY_TMP%\bin_5A.tmp"+... out.exe>nul
-copy /y /b ^"%MY_TMP%\bin_!output_buffer: =.tmp^"+^"%MY_TMP%\bin_!.tmp^" out.exe>nul
+::copy /y /b "%MINI_TOOLCHAIN_TMP%\bin\4D.tmp"+"%MINI_TOOLCHAIN_TMP%\bin\5A.tmp"+... out.exe>nul
+copy /y /b ^"%MINI_TOOLCHAIN_TMP%\bin\!output_buffer: =.tmp^"+^"%MINI_TOOLCHAIN_TMP%\bin\!.tmp^" out.exe>nul
 
 echo off
