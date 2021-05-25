@@ -17,9 +17,11 @@ if %err% neq 0 echo ERROR: some tests are failed>&2
 exit /b %err%
 
 :run_test
+    setlocal
     echo Run test "%~1"...
-    "%COMSPEC%" /d /c "%~1">"%TMP%\mini_toolchain_test.log"2>&1&& echo passed
-    if %errorlevel% neq 0 echo failed& echo log:& type "%TMP%\mini_toolchain_test.log"
+    "%COMSPEC%" /d /c "%~1">"%TMP%\mini_toolchain_test.log"2>&1&& echo PASSED
+    set err=%errorlevel%
+    if %err% neq 0 echo Test FAILED "%~1"& echo logs:& type "%TMP%\mini_toolchain_test.log"
     del "%TMP%\mini_toolchain_test.log"
-exit /b
+exit /b %err%
 
