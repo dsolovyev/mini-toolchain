@@ -1,5 +1,5 @@
 @echo off
-setlocal enabledelayedexpansion enableextensions
+setlocal disabledelayedexpansion enableextensions
 
 call "%~dp0fs\init_global_tmp.bat" || (echo ERROR: "%~dp0fs\init_global_tmp.bat" failed>&2& exit /b 1)
 
@@ -95,6 +95,41 @@ rem      } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
 ::#define IMAGE_FILE_MACHINE_AMD64             0x8664
 
 
+:://
+::// Directory format.
+:://
+::
+::typedef struct _IMAGE_DATA_DIRECTORY {
+::    DWORD   VirtualAddress;
+::    DWORD   Size;
+::} IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;
+::
+::#define IMAGE_NUMBEROF_DIRECTORY_ENTRIES    16
+
+::// Directory Entries
+::
+::#define IMAGE_DIRECTORY_ENTRY_EXPORT          0   // Export Directory
+::#define IMAGE_DIRECTORY_ENTRY_IMPORT          1   // Import Directory
+::#define IMAGE_DIRECTORY_ENTRY_RESOURCE        2   // Resource Directory
+::#define IMAGE_DIRECTORY_ENTRY_EXCEPTION       3   // Exception Directory
+::#define IMAGE_DIRECTORY_ENTRY_SECURITY        4   // Security Directory
+::#define IMAGE_DIRECTORY_ENTRY_BASERELOC       5   // Base Relocation Table
+::#define IMAGE_DIRECTORY_ENTRY_DEBUG           6   // Debug Directory
+:://      IMAGE_DIRECTORY_ENTRY_COPYRIGHT       7   // (X86 usage)
+::#define IMAGE_DIRECTORY_ENTRY_ARCHITECTURE    7   // Architecture Specific Data
+::#define IMAGE_DIRECTORY_ENTRY_GLOBALPTR       8   // RVA of GP
+::#define IMAGE_DIRECTORY_ENTRY_TLS             9   // TLS Directory
+::#define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG    10   // Load Configuration Directory
+::#define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT   11   // Bound Import Directory in headers
+::#define IMAGE_DIRECTORY_ENTRY_IAT            12   // Import Address Table
+::#define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13   // Delay Load Import Descriptors
+::#define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptor
+
+
+::#define IMAGE_NT_OPTIONAL_HDR32_MAGIC      0x10b
+::#define IMAGE_NT_OPTIONAL_HDR64_MAGIC      0x20b
+
+
 setlocal
 :loop_cur_datetime
     call "%~dp0datetime\timebias.bat"|| (echo ERROR: datetime\timebias.bat failed>&2& exit /b 1)
@@ -108,9 +143,12 @@ set /a cdate+=timebias*60
 call "%~dp0conversion\int_to_hex4le.bat" %cdate%
 endlocal& set "hex_datetime_stamp=%result%"
 
+
+
 rem     typedef struct _IMAGE_NT_HEADERS {
 rem 00:    DWORD Signature;
 set "output_buffer=%output_buffer% 50 45 00 00" & rem IMAGE_NT_SIGNATURE = 50 45 00 00  // PE00
+
 rem 04:    IMAGE_FILE_HEADER FileHeader;
 rem        typedef struct _IMAGE_FILE_HEADER {
 rem 04:        WORD    Machine;
@@ -128,12 +166,117 @@ set "output_buffer=%output_buffer% 00 00"
 rem 16:        WORD    Characteristics;
 set "output_buffer=%output_buffer% 00 00"
 rem        } IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;
+
 rem 18:    IMAGE_OPTIONAL_HEADER32 OptionalHeader;
+rem        typedef struct _IMAGE_OPTIONAL_HEADER {
+rem            //
+rem            // Standard fields.
+rem            //
+
+rem 18:        WORD    Magic;
+set "output_buffer=%output_buffer% 0b 01" & rem IMAGE_NT_OPTIONAL_HDR32_MAGIC
+rem 1A:        BYTE    MajorLinkerVersion;
+set "output_buffer=%output_buffer% 00"
+rem 1B:        BYTE    MinorLinkerVersion;
+set "output_buffer=%output_buffer% 00"
+rem 1C:        DWORD   SizeOfCode;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 20:        DWORD   SizeOfInitializedData;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 24:        DWORD   SizeOfUninitializedData;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 28:        DWORD   AddressOfEntryPoint;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 2C:        DWORD   BaseOfCode;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 30:        DWORD   BaseOfData;
+set "output_buffer=%output_buffer% 00 00 00 00"
+
+rem            //
+rem            // NT additional fields.
+rem            //
+
+rem 34:        DWORD   ImageBase;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 38:        DWORD   SectionAlignment;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 3C:        DWORD   FileAlignment;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 40:        WORD    MajorOperatingSystemVersion;
+set "output_buffer=%output_buffer% 00 00"
+rem 42:        WORD    MinorOperatingSystemVersion;
+set "output_buffer=%output_buffer% 00 00"
+rem 44:        WORD    MajorImageVersion;
+set "output_buffer=%output_buffer% 00 00"
+rem 46:        WORD    MinorImageVersion;
+set "output_buffer=%output_buffer% 00 00"
+rem 48:        WORD    MajorSubsystemVersion;
+set "output_buffer=%output_buffer% 00 00"
+rem 4A:        WORD    MinorSubsystemVersion;
+set "output_buffer=%output_buffer% 00 00"
+rem 4C:        DWORD   Win32VersionValue;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 50:        DWORD   SizeOfImage;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 54:        DWORD   SizeOfHeaders;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 58:        DWORD   CheckSum;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 5C:        WORD    Subsystem;
+set "output_buffer=%output_buffer% 00 00"
+rem 5E:        WORD    DllCharacteristics;
+set "output_buffer=%output_buffer% 00 00"
+rem 60:        DWORD   SizeOfStackReserve;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 64:        DWORD   SizeOfStackCommit;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 68:        DWORD   SizeOfHeapReserve;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 6C:        DWORD   SizeOfHeapCommit;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 70:        DWORD   LoaderFlags;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 74:        DWORD   NumberOfRvaAndSizes;
+set "output_buffer=%output_buffer% 00 00 00 00"
+rem 78:        IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
+rem 78:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT=0]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem 80:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT=1]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem 88:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE=2]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem 90:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION=3]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem 98:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_SECURITY=4]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem A0:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC=5]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem A8:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG=6]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem B0:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_COPYRIGHT(x86)||IMAGE_DIRECTORY_ENTRY_ARCHITECTURE=7]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem B8:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_GLOBALPTR=8]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem C0:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS=9]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem C8:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG=10]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem D0:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT=11]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem D8:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT=12]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem E0:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT=13]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem E8:                             DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR=14]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem F0:                             DataDirectory[<padding>=15]
+set "output_buffer=%output_buffer% 00 00 00 00 00 00 00 00"
+rem        } IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;
 rem    } IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;
+rem F8:
 
 
 
-::copy /y /b "%MINI_TOOLCHAIN_TMP%\bin\4D.tmp"+"%MINI_TOOLCHAIN_TMP%\bin\5A.tmp"+... out.exe>nul
-copy /y /b ^"%MINI_TOOLCHAIN_TMP%\bin\!output_buffer: =.tmp^"+^"%MINI_TOOLCHAIN_TMP%\bin\!.tmp^" out.exe>nul
+call "%~dp0binary\output.bat" --create out.exe "%output_buffer%"|| (echo ERROR: "%~dp0binary\output.bat" failed>&2& exit /b 1)
 
 echo off
