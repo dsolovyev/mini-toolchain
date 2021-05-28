@@ -16,6 +16,23 @@ rd /s /q "%TMP%"& exit /b %errorlevel%
 
 :do_tests
 
+setlocal& set MINI_TOOLCHAIN_MAX_OUTPUT_SIZE=-1
+call .\output.bat --create "%TMP%\size_1.bin" 00&& exit /b 1
+endlocal
+
+setlocal& set MINI_TOOLCHAIN_MAX_OUTPUT_SIZE=0
+call .\output.bat --create "%TMP%\size_1.bin" 00&& exit /b 1
+endlocal
+
+setlocal& set MINI_TOOLCHAIN_MAX_OUTPUT_SIZE=8192
+call .\output.bat --create "%TMP%\size_1.bin" 00&& exit /b 1
+endlocal
+
+setlocal& set MINI_TOOLCHAIN_MAX_CMD_LINE=5
+call .\output.bat --create "%TMP%\size_1.bin" 00&& exit /b 1
+endlocal
+
+
 setlocal& call .\output.bat --create "%TMP%\size_1.bin" 00|| exit /b 1
 call :check_size "%TMP%\size_1.bin" 1 echo ERROR: test failed>&2|| exit /b 1
 del "%TMP%\size_1.bin"

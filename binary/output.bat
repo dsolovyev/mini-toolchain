@@ -33,9 +33,30 @@ if %buffer_size% neq %buffer_size_check% (echo ERROR: %~nx0: bad "%%buffer%%" - 
 call "%~dp0..\string\length.bat" "%MINI_TOOLCHAIN_TMP%"
 set dir_len=%errorlevel%& if %errorlevel% lss 0 echo ERROR: %~nx0: bad "%%MINI_TOOLCHAIN_TMP%%" length>&2& exit /b 1
 
-rem set /a dir_len+=5
-rem if not defined MINI_TOOLCHAIN_MAX_CMD_LINE set MINI_TOOLCHAIN_MAX_CMD_LINE=500
-if not defined MINI_TOOLCHAIN_MAX_OUTPUT_SIZE set MINI_TOOLCHAIN_MAX_OUTPUT_SIZE=10
+
+
+:: evaluate block size taking into account cmd.exe's limitation of maximum line length after expansion
+:: the line:
+::    copy /y /b "out.exe"+"C:\Temp\bin\4D.tmp"+"C:\Temp\bin\5A.tmp" "out.exe">nul
+
+::                     "   C:\Temp  \bin\  4D.tmp  "   +
+set /a each_byte_len = 1 + dir_len +  5   +  6  +  1 + 1
+
+if not defined MINI_TOOLCHAIN_MAX_CMD_LINE set MINI_TOOLCHAIN_MAX_CMD_LINE=8000
+if not defined MINI_TOOLCHAIN_MAX_OUTPUT_SIZE (
+    set /a "MINI_TOOLCHAIN_MAX_OUTPUT_SIZE = (MINI_TOOLCHAIN_MAX_CMD_LINE - 150 - 2*file_len) / each_byte_len"
+)
+
+if %MINI_TOOLCHAIN_MAX_OUTPUT_SIZE% leq 0 echo ERROR: block size %MINI_TOOLCHAIN_MAX_OUTPUT_SIZE% is negative or zero>&2& exit /b 2
+
+set /a expanded_line_len = 150 + file_len + MINI_TOOLCHAIN_MAX_OUTPUT_SIZE*each_byte_len + file_len
+if %expanded_line_len% geq %MINI_TOOLCHAIN_MAX_CMD_LINE% (
+    (echo ERROR: block size %MINI_TOOLCHAIN_MAX_OUTPUT_SIZE% leads to line_len=%expanded_line_len% that is ^>= %MINI_TOOLCHAIN_MAX_CMD_LINE%)>&2
+    exit /b 2
+)
+
+
+
 set /a max_len = 3*MINI_TOOLCHAIN_MAX_OUTPUT_SIZE - 1
 set /a max_len_plus_1 = max_len + 1
 rem max_len=%max_len%
