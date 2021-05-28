@@ -85,6 +85,29 @@ del "%TMP%\size_2500.bin"
 endlocal
 
 
+
+setlocal& echo ABC>"%TMP%\ABC.txt"
+call .\output.bat --create "%TMP%\ABC.out" "41 42 43 0d 0a"|| exit /b 1
+fc /b "%TMP%\ABC.txt" "%TMP%\ABC.out"|| exit /b 1
+del "%TMP%\ABC.*"
+endlocal
+
+setlocal& (echo abc& echo 123)>"%TMP%\abc123.txt"
+call .\output.bat --create "%TMP%\abc123.out" "61 62 63 0d 0a"|| exit /b 1
+call .\output.bat --append "%TMP%\abc123.out" "31 32 33 0d 0a"|| exit /b 1
+fc /b "%TMP%\abc123.txt" "%TMP%\abc123.out"|| exit /b 1
+del "%TMP%\abc123.*"
+endlocal
+
+setlocal& (echo 123)>"%TMP%\123.txt"
+call .\output.bat --create "%TMP%\123.out" "61 62 63 0d 0a"|| exit /b 1
+call .\output.bat --create "%TMP%\123.out" "31 32 33 0d 0a"|| exit /b 1
+fc /b "%TMP%\123.txt" "%TMP%\123.out"|| exit /b 1
+del "%TMP%\123.*"
+endlocal
+
+
+
 echo %~nx0: all tests passed
 exit /b 0
 
