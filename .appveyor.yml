@@ -7,6 +7,9 @@ build_script:
   - ver
 
 test_script:
-  - call test\framework.bat all
-  - cmd /c call .\link.bat
-  - cmd /c .\out.exe& exit 0
+  - cmd: |
+      call .\link.bat > link.out 2>&1
+      type link.out
+      powershell Add-AppveyorTest -Name test_name -Filename filename.exe -Outcome Running
+      timeout /t 10 /nobreak
+      powershell Update-AppveyorTest -Name test_name -Filename filename.exe -Outcome Failed -Duration 1000

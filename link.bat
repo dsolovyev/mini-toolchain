@@ -1,4 +1,3 @@
-@echo off
 setlocal disabledelayedexpansion enableextensions
 
 call "%~dp0fs\init_global_tmp.bat" || (echo ERROR: "%~dp0fs\init_global_tmp.bat" failed>&2& exit /b 1)
