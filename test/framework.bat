@@ -1,8 +1,10 @@
 @echo off
 setlocal disabledelayedexpansion enableextensions
 
-set "arg=%2"
-if defined arg echo ERROR: extra argument #2>&2& exit /b 2
+set "arg=%3"
+if defined arg echo ERROR: extra argument #3>&2& exit /b 2
+
+set "TEST_REPORT_HELPER=%~2"
 
 set "search_pattern=%~1"
 if not defined search_pattern echo ERROR: no arguments>&2& exit /b 2
@@ -26,6 +28,22 @@ exit /b 0
 
 
 :run_test_script
+    set SCRIPT_WORKSPACE_IN=
+    call :create_script_workspace "%~1"|| (echo ERROR: ws creation for "%~1" failed>&2& exit /b 1)
+    pushd "%SCRIPT_WORKSPACE%"|| (echo ERROR: can't change dir to "%SCRIPT_WORKSPACE%">&2& exit /b 1)
+    set SCRIPT_WORKSPACE_IN=1
+    call :run_test_script_in_ws "%~1"|| goto :run_test_script__save_ws
+    popd& set SCRIPT_WORKSPACE_IN=
+    call :delete_script_workspace|| (echo ERROR: ws deletion for "%~1" failed>&2& goto :run_test_script__save_ws)
+    exit /b 0
+
+  :run_test_script__save_ws
+    call :save_workspace|| (echo WARNING: ws saving for "%~1" failed>&2)
+    if defined SCRIPT_WORKSPACE_IN popd
+exit /b 1
+
+
+:run_test_script_in_ws
     setlocal
     set SCRIPT_TESTS=
     set SCRIPT_HAS_INIT=0
@@ -102,10 +120,15 @@ exit /b 0
 :do_run_test
     if not defined TEST_COMBINATION_STR (
         echo Running %~2 ...
+        set "TEST_WORKSPACE=%~2"
     ) else (
         echo Running %~2^(%TEST_COMBINATION_STR%^) ...
+        set "TEST_WORKSPACE=%~2.%TEST_COMBINATION_NUM%"
     )
     set /a TEST_TOTAL += 1
+
+    call :create_test_workspace "%TEST_WORKSPACE%"|| (echo ERROR: ws creation for test "%~2" failed>&2& exit /b 1)
+    pushd "%TEST_WORKSPACE%"|| (echo ERROR: can't change dir to "%TEST_WORKSPACE%">&2& exit /b 1)
 
     "%COMSPEC%" /c echo off^& call "%~1" "TEST_%~2"
     if %errorlevel% == 0 (
@@ -113,7 +136,11 @@ exit /b 0
         echo PASSED
     ) else (
         echo FAILED>&2
+        call :save_workspace "%TEST_WORKSPACE%"|| (echo ERROR: ws saving for test "%~2" failed>&2& popd& exit /b 1)
     )
+
+    popd
+    call :delete_test_workspace|| (echo ERROR: ws deletion for test "%~2" failed>&2& exit /b 1)
 exit /b 0
 
 
@@ -149,9 +176,9 @@ exit /b 0
         )
 
         if defined TEST_PARAMS (
-            call :run_parameterized_test "%~1" "%~2" %%TEST_COMBINATION_NUM%%
+            call :run_parameterized_test "%~1" "%~2" %%TEST_COMBINATION_NUM%%|| exit /b 1
         ) else (
-            call :do_run_test "%~1" "%~2"
+            call :do_run_test "%~1" "%~2"|| exit /b 1
             set /a TEST_COMBINATION_NUM += 1
         )
     )
@@ -163,5 +190,38 @@ exit /b 0
     & set "TEST_COMBINATION_NUM=%TEST_COMBINATION_NUM%" ^
     & set /a "TEST_TOTAL=%TEST_TOTAL%" ^
     & set /a "TEST_PASSED=%TEST_PASSED%"& ^
+exit /b 0
+
+
+
+:create_script_workspace
+    set "SCRIPT_WORKSPACE=%TMP%\mini-toolchain-%~n1"
+    md "%SCRIPT_WORKSPACE%"|| (echo ERROR: can't create dir "%SCRIPT_WORKSPACE%">&2& exit /b 1)
+exit /b 0
+
+:delete_script_workspace
+    rd /s /q "%SCRIPT_WORKSPACE%"|| (echo ERROR: can't remove dir "%SCRIPT_WORKSPACE%">&2& exit /b 1)
+exit /b 0
+
+
+:create_test_workspace
+    set "TEST_WORKSPACE=%CD%\%~1"
+    md "%TEST_WORKSPACE%"|| (echo ERROR: can't create dir "%TEST_WORKSPACE%">&2& exit /b 1)
+exit /b 0
+
+:delete_test_workspace
+    rd /s /q "%TEST_WORKSPACE%"|| (echo ERROR: can't remove dir "%TEST_WORKSPACE%">&2& exit /b 1)
+exit /b 0
+
+:save_workspace
+    echo INFO: saving workspace "%~1">&2
+    if not defined TEST_REPORT_HELPER (
+        echo WARNING: no TEST_REPORT_HELPER is provided, skipping workspace "%~1">&2
+        echo WARNING: default is to delete test ws, but to keep script ws>&2
+        goto :run_test_script__save_ws_exit
+    )
+    echo TEST_REPORT_HELPER=%TEST_REPORT_HELPER%
+    pause
+  :run_test_script__save_ws_exit
 exit /b 0
 
