@@ -18,7 +18,6 @@ for /r %%t in (%search_pattern%) do (
     )
 )
 
-echo.
 echo GLOBAL_TOTAL=%GLOBAL_TOTAL%
 echo GLOBAL_PASSED=%GLOBAL_PASSED%
 if %GLOBAL_TOTAL% neq %GLOBAL_PASSED% exit /b 1
@@ -44,17 +43,17 @@ exit /b 0
         call "%~1" INIT|| (echo ERROR: "%~1" INIT failed>&2& exit /b 1)
     )
     for %%n in (%SCRIPT_TESTS%) do (
-        echo.
         call :run_test "%~1" "%%~n"|| (echo ERROR: "%~1" testing failed>&2& exit /b 1)
         set /a SCRIPT_TOTAL += TEST_TOTAL
         set /a SCRIPT_PASSED += TEST_PASSED
+        echo.
     )
     if "%SCRIPT_HAS_CLEANUP%" == "1" (
         call "%~1" CLEANUP|| (echo ERROR: "%~1" CLEANUP failed>&2& exit /b 1)
     )
-    echo.
     echo SCRIPT_TOTAL=%SCRIPT_TOTAL%
     echo SCRIPT_PASSED=%SCRIPT_PASSED%
+    echo.
     endlocal ^
     & set "SCRIPT_TOTAL=%SCRIPT_TOTAL%" ^
     & set "SCRIPT_PASSED=%SCRIPT_PASSED%"& ^
