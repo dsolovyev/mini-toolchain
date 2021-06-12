@@ -89,6 +89,10 @@ exit /b 0
 :parse_test_and_params
     set "line=%~1"
     if "%line:~0,6%" == ":TEST_" (
+        if "%line:~6%" == "" (
+            echo ERROR: empty test name>&2
+            exit /b 1
+        )
         call set "duplicated_test=%%SCRIPT_TEST_%line:~6%%%"
         if defined duplicated_test (
             echo ERROR: duplicated test "%line:~6%">&2
