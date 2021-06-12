@@ -38,7 +38,7 @@ exit /b 0
     exit /b 0
 
   :run_test_script__save_ws
-    call :save_workspace|| (echo WARNING: ws saving for "%~1" failed>&2)
+    call :save_workspace "%SCRIPT_WORKSPACE%"|| (echo WARNING: ws saving for "%~1" failed>&2)
     if defined SCRIPT_WORKSPACE_IN popd
 exit /b 1
 
@@ -119,24 +119,29 @@ exit /b 0
 
 :do_run_test
     if not defined TEST_COMBINATION_STR (
-        echo Running %~2 ...
+        set "TEST_NAME=%~2"
         set "TEST_WORKSPACE=%~2"
     ) else (
-        echo Running %~2^(%TEST_COMBINATION_STR%^) ...
+        set "TEST_NAME=%~2(%TEST_COMBINATION_STR%)"
         set "TEST_WORKSPACE=%~2.%TEST_COMBINATION_NUM%"
     )
+    echo Running %TEST_NAME% ...
     set /a TEST_TOTAL += 1
 
     call :create_test_workspace "%TEST_WORKSPACE%"|| (echo ERROR: ws creation for test "%~2" failed>&2& exit /b 1)
     pushd "%TEST_WORKSPACE%"|| (echo ERROR: can't change dir to "%TEST_WORKSPACE%">&2& exit /b 1)
 
+    call :publish_test_start "%~1"|| (echo WARNING: can't publish test start>&2)
+
     "%COMSPEC%" /c echo off^& call "%~1" "TEST_%~2"
     if %errorlevel% == 0 (
         set /a TEST_PASSED += 1
         echo PASSED
+        call :publish_test_result "%~1" pass|| (echo WARNING: can't publish test result>&2)
     ) else (
         echo FAILED>&2
-        call :save_workspace "%TEST_WORKSPACE%"|| (echo ERROR: ws saving for test "%~2" failed>&2& popd& exit /b 1)
+        call :publish_test_result "%~1" fail|| (echo WARNING: can't publish test result>&2)
+        call :save_workspace "%TEST_WORKSPACE%" "%SCRIPT_WORKSPACE%"|| (echo ERROR: ws saving for test "%~2" failed>&2& popd& exit /b 1)
     )
 
     popd
@@ -195,7 +200,7 @@ exit /b 0
 
 
 :create_script_workspace
-    set "SCRIPT_WORKSPACE=%TMP%\mini-toolchain-%~n1"
+    set "SCRIPT_WORKSPACE=%TMP%\%~n1"
     md "%SCRIPT_WORKSPACE%"|| (echo ERROR: can't create dir "%SCRIPT_WORKSPACE%">&2& exit /b 1)
 exit /b 0
 
@@ -213,15 +218,30 @@ exit /b 0
     rd /s /q "%TEST_WORKSPACE%"|| (echo ERROR: can't remove dir "%TEST_WORKSPACE%">&2& exit /b 1)
 exit /b 0
 
+
 :save_workspace
+    if not defined TEST_REPORT_HELPER exit /b 0
     echo INFO: saving workspace "%~1">&2
-    if not defined TEST_REPORT_HELPER (
-        echo WARNING: no TEST_REPORT_HELPER is provided, skipping workspace "%~1">&2
-        echo WARNING: default is to delete test ws, but to keep script ws>&2
-        goto :run_test_script__save_ws_exit
+  setlocal
+    set err=0
+    cd "%~1"|| (set err=1& goto :save_workspace__end)
+    if "%~2" == "" (
+        call "%~dp0%TEST_REPORT_HELPER%.bat" save "%~1"|| (set err=1& goto :save_workspace__end)
+    ) else (
+        call "%~dp0%TEST_REPORT_HELPER%.bat" save "%~1" "%~n2"|| (set err=1& goto :save_workspace__end)
     )
-    echo TEST_REPORT_HELPER=%TEST_REPORT_HELPER%
-    pause
-  :run_test_script__save_ws_exit
-exit /b 0
+    :save_workspace__end
+  endlocal& ^
+exit /b %err%
+
+
+:publish_test_start
+    if not defined TEST_REPORT_HELPER exit /b 0
+    call "%~dp0%TEST_REPORT_HELPER%.bat" test_start "%~1"
+exit /b %errorlevel%
+
+:publish_test_result
+    if not defined TEST_REPORT_HELPER exit /b 0
+    call "%~dp0%TEST_REPORT_HELPER%.bat" test_result "%~1" "%~2"
+exit /b %errorlevel%
 

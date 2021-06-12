@@ -8,4 +8,4 @@ build_script:
 
 test_script:
   - cmd: |
-      call test\framework.bat test\1.test.bat
+      call test\framework.bat test\1.test.bat helper-appveyor

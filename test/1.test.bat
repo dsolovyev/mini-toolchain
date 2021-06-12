@@ -38,6 +38,12 @@ exit /b 0
 exit /b 1
 
 
+:TEST_with_file
+    echo 123> 123.txt
+    exit /b 1
+exit /b 0
+
+
 :INIT
     set test_global_var=12345
 exit /b 0
