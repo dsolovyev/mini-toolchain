@@ -133,7 +133,7 @@ exit /b 0
 
     call :publish_test_start "%~1"|| (echo WARNING: can't publish test start>&2)
 
-    "%COMSPEC%" /c echo off^& call "%~1" "TEST_%~2"
+    "%COMSPEC%" /c call "%~1" "TEST_%~2">"%~2.log" 2>&1
     if %errorlevel% == 0 (
         set /a TEST_PASSED += 1
         echo PASSED
