@@ -8,4 +8,6 @@ build_script:
 
 test_script:
   - cmd: |
-      call test\framework.bat test\1.test.bat helper-appveyor
+      call test\framework.bat all helper-appveyor
+      call .\link.bat
+      .\out.exe& exit 0
