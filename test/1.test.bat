@@ -44,6 +44,11 @@ exit /b 1
 exit /b 0
 
 
+:TEST_timeout_15s
+    timeout /t 15 /nobreak
+exit /b %errorlevel%
+
+
 :INIT
     set test_global_var=12345
 exit /b 0

@@ -20,7 +20,8 @@ exit /b %errorlevel%
         Update-AppveyorTest ^
         -Name $Env:TEST_NAME ^
         -FileName "%~2" ^
-        -Outcome %outcome%
+        -Outcome %outcome% ^
+        -Duration %~4
 
     endlocal& ^
 exit /b %errorlevel%

@@ -118,6 +118,7 @@ exit /b 0
 
 
 :do_run_test
+    setlocal
     if not defined TEST_COMBINATION_STR (
         set "TEST_NAME=%~2"
         set "TEST_WORKSPACE=%~2"
@@ -133,19 +134,33 @@ exit /b 0
 
     call :publish_test_start "%~1"|| (echo WARNING: can't publish test start>&2)
 
+    set "t_sta=%TIME%"
+
     "%COMSPEC%" /c call "%~1" "TEST_%~2">"%~2.log" 2>&1
-    if %errorlevel% == 0 (
+    set err=%errorlevel%
+
+    set "t_end=%TIME%"
+    set /a s=((%t_sta:~0,2%*60 + 1%t_sta:~3,2%-100)*60 + 1%t_sta:~6,2%-100)*100 + 1%t_sta:~9,2%-100
+    set /a e=((%t_end:~0,2%*60 + 1%t_end:~3,2%-100)*60 + 1%t_end:~6,2%-100)*100 + 1%t_end:~9,2%-100
+    set /a "d = (e-s + 8640000) %% 8640000"
+    set /a duration=d*10
+
+    if %err% == 0 (
         set /a TEST_PASSED += 1
         echo PASSED
-        call :publish_test_result "%~1" pass|| (echo WARNING: can't publish test result>&2)
+        call :publish_test_result "%~1" pass "%duration%"|| (echo WARNING: can't publish test result>&2)
     ) else (
         echo FAILED>&2
-        call :publish_test_result "%~1" fail|| (echo WARNING: can't publish test result>&2)
+        call :publish_test_result "%~1" fail "%duration%"|| (echo WARNING: can't publish test result>&2)
         call :save_workspace "%TEST_WORKSPACE%" "%SCRIPT_WORKSPACE%"|| (echo ERROR: ws saving for test "%~2" failed>&2& popd& exit /b 1)
     )
 
     popd
     call :delete_test_workspace|| (echo ERROR: ws deletion for test "%~2" failed>&2& exit /b 1)
+
+    endlocal ^
+    & set /a "TEST_TOTAL=%TEST_TOTAL%" ^
+    & set /a "TEST_PASSED=%TEST_PASSED%"& ^
 exit /b 0
 
 
@@ -242,6 +257,6 @@ exit /b %errorlevel%
 
 :publish_test_result
     if not defined TEST_REPORT_HELPER exit /b 0
-    call "%~dp0%TEST_REPORT_HELPER%.bat" test_result "%~1" "%~2"
+    call "%~dp0%TEST_REPORT_HELPER%.bat" test_result "%~1" "%~2" "%~3"
 exit /b %errorlevel%
 
