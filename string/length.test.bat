@@ -1,112 +1,133 @@
-setlocal
-cd string
+goto %~1
 
-setlocal& call .\length.bat
-if %errorlevel% neq 0 echo ERROR: test failed>&2& exit /b 1
-endlocal
+:TEST_no_argument
+    call "%~dp0length.bat"
+    if %errorlevel% neq 0 exit /b 1
+exit /b 0
 
-setlocal& call .\length.bat ""
-if %errorlevel% neq 0 echo ERROR: test failed>&2& exit /b 1
-endlocal
+:TEST_empty_argument_quoted
+    call "%~dp0length.bat" ""
+    if %errorlevel% neq 0 exit /b 1
+exit /b 0
 
-setlocal& call .\length.bat a
-if %errorlevel% neq 1 echo ERROR: test failed>&2& exit /b 1
-endlocal
+:TEST_one_character
+    call "%~dp0length.bat" a
+    if %errorlevel% neq 1 exit /b 1
+exit /b 0
 
-setlocal& call .\length.bat "a"
-if %errorlevel% neq 1 echo ERROR: test failed>&2& exit /b 1
-endlocal
+:TEST_one_character_quoted
+    call "%~dp0length.bat" "a"
+    if %errorlevel% neq 1 exit /b 1
+exit /b 0
 
-setlocal& call .\length.bat ab
-if %errorlevel% neq 2 echo ERROR: test failed>&2& exit /b 1
-endlocal
+:TEST_two_characters
+    call "%~dp0length.bat" ab
+    if %errorlevel% neq 2 exit /b 1
+exit /b 0
 
-setlocal& call .\length.bat abc
-if %errorlevel% neq 3 echo ERROR: test failed>&2& exit /b 1
-endlocal
+:TEST_three_characters
+    call "%~dp0length.bat" abc
+    if %errorlevel% neq 3 exit /b 1
+exit /b 0
 
-setlocal& call .\length.bat abcd
-if %errorlevel% neq 4 echo ERROR: test failed>&2& exit /b 1
-endlocal
+:TEST_four_characters
+    call "%~dp0length.bat" abcd
+    if %errorlevel% neq 4 exit /b 1
+exit /b 0
 
-setlocal& call .\length.bat abcde
-if %errorlevel% neq 5 echo ERROR: test failed>&2& exit /b 1
-endlocal
+:TEST_five_characters
+    call "%~dp0length.bat" abcde
+    if %errorlevel% neq 5 exit /b 1
+exit /b 0
 
-setlocal& call .\length.bat abcdef
-if %errorlevel% neq 6 echo ERROR: test failed>&2& exit /b 1
-endlocal
-
-
-setlocal& call .\length.bat a b
-if %errorlevel% neq -1 echo ERROR: test failed>&2& exit /b 1
-endlocal
-
-
-setlocal& call .\length.bat "a b"
-if %errorlevel% neq 3 echo ERROR: test failed>&2& exit /b 1
-endlocal
-
-setlocal& call .\length.bat ^^
-if %errorlevel% neq 1 echo ERROR: test failed>&2& exit /b 1
-endlocal
-
-setlocal& call .\length.bat ^^^^
-if %errorlevel% neq 2 echo ERROR: test failed>&2& exit /b 1
-endlocal
-
-setlocal& call .\length.bat ^"^"123^"
-if %errorlevel% neq 4 echo ERROR: test failed>&2& exit /b 1
-endlocal
-
-setlocal& call .\length.bat ^"^"123^"^"
-if %errorlevel% neq 5 echo ERROR: test failed>&2& exit /b 1
-endlocal
-
-setlocal& call .\length.bat ^"^"123^^^^^"^"
-if %errorlevel% neq 6 echo ERROR: test failed>&2& exit /b 1
-endlocal
-
-setlocal& call .\length.bat ^"a^b^"
-if %errorlevel% neq 2 echo ERROR: test failed>&2& exit /b 1
-endlocal
+:TEST_six_characters
+    call "%~dp0length.bat" abcdef
+    if %errorlevel% neq 6 exit /b 1
+exit /b 0
 
 
+:TEST_extra_argument
+    call "%~dp0length.bat" a b
+    if %errorlevel% neq -1 exit /b 1
+exit /b 0
 
-setlocal& set var=ab cd ef
-call .\length.bat "%var%"
-if %errorlevel% neq 8 echo ERROR: test failed>&2& exit /b 1
-endlocal
 
-setlocal& set "var=ab cd ef"
-call .\length.bat "%var%"
-if %errorlevel% neq 8 echo ERROR: test failed>&2& exit /b 1
-endlocal
+:TEST_char_space_char
+    call "%~dp0length.bat" "a b"
+    if %errorlevel% neq 3 exit /b 1
+exit /b 0
 
-setlocal& call .\length.bat "C:\Program Files (x86)"
-if %errorlevel% neq 22 echo ERROR: test failed>&2& exit /b 1
-endlocal
+:TEST_caret
+    call "%~dp0length.bat" ^^
+    if %errorlevel% neq 1 exit /b 1
+exit /b 0
 
-setlocal& set "var=C:\Program Files (x86)"
-call .\length.bat "%var%;%var%"
-if %errorlevel% neq 45 echo ERROR: test failed>&2& exit /b 1
-endlocal
+:TEST_two_carets
+    call "%~dp0length.bat" ^^^^
+    if %errorlevel% neq 2 exit /b 1
+exit /b 0
 
-setlocal& call .\length.bat "                      "
-if %errorlevel% neq 22 echo ERROR: test failed>&2& exit /b 1
-endlocal
+:TEST_quote_within_quoted_string
+    call "%~dp0length.bat" ^"^"123^"
+    if %errorlevel% neq 4 exit /b 1
+exit /b 0
+
+:TEST_quotes_within_quoted_string
+    call "%~dp0length.bat" ^"^"123^"^"
+    if %errorlevel% neq 5 exit /b 1
+exit /b 0
+
+:TEST_quotes_and_caret_within_quoted_string
+    call "%~dp0length.bat" ^"^"123^^^^^"^"
+    if %errorlevel% neq 6 exit /b 1
+exit /b 0
+
+:TEST_one_caret_is_escape_symbol
+    call "%~dp0length.bat" ^"a^b^"
+    if %errorlevel% neq 2 exit /b 1
+exit /b 0
 
 
 
-setlocal
-echo off
+:TEST_var_is_string_with_spaces
+    set var=ab cd ef
+    call "%~dp0length.bat" "%var%"
+    if %errorlevel% neq 8 exit /b 1
+exit /b 0
+
+:TEST_var_is_string_with_spaces_quoted
+    set "var=ab cd ef"
+    call "%~dp0length.bat" "%var%"
+    if %errorlevel% neq 8 exit /b 1
+exit /b 0
+
+:TEST_program_files_x86
+    call "%~dp0length.bat" "C:\Program Files (x86)"
+    if %errorlevel% neq 22 exit /b 1
+exit /b 0
+
+:TEST_program_files_x86_var_double
+    set "var=C:\Program Files (x86)"
+    call "%~dp0length.bat" "%var%;%var%"
+    if %errorlevel% neq 45 exit /b 1
+exit /b 0
+
+:TEST_twenty_two_spaces
+    call "%~dp0length.bat" "                      "
+    if %errorlevel% neq 22 exit /b 1
+exit /b 0
+
+
+
+:: 1..100, 900..1000, 8000..8101
+:TEST_mega
 set /a i=0
 set s=
 :loop
     set /a i=%i%+1
     set s=%s%x
 
-    call .\length.bat "%s%"
+    call "%~dp0length.bat" "%s%"
     if %errorlevel% neq %i% echo ERROR: length test failed ^(actual=%errorlevel% expected=%i%^)>&2& exit /b 1
 
     if %i% equ 100 call :set_900
@@ -123,11 +144,6 @@ goto :skip_set
     set s=%s%%s%%s%%s%%s%%s%%s%%s:~1%
   exit /b
 :skip_set
-echo on
-endlocal
 
-
-:tests_passed
-echo %~nx0: all tests passed
 exit /b 0
 
