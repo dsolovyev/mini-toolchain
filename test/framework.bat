@@ -32,9 +32,17 @@ exit /b 0
     call :create_script_workspace "%~1"|| (echo ERROR: ws creation for "%~1" failed>&2& exit /b 1)
     pushd "%SCRIPT_WORKSPACE%"|| (echo ERROR: can't change dir to "%SCRIPT_WORKSPACE%">&2& exit /b 1)
     set SCRIPT_WORKSPACE_IN=1
+
     call :run_test_script_in_ws "%~1"|| goto :run_test_script__save_ws
+
     popd& set SCRIPT_WORKSPACE_IN=
-    call :delete_script_workspace|| (echo ERROR: ws deletion for "%~1" failed>&2& goto :run_test_script__save_ws)
+
+    if %SCRIPT_TOTAL% equ %SCRIPT_PASSED% (
+        call :delete_script_workspace|| (
+            echo ERROR: ws deletion for "%~1" failed>&2
+            goto :run_test_script__save_ws
+        )
+    )
     exit /b 0
 
   :run_test_script__save_ws
@@ -156,7 +164,12 @@ exit /b 0
     )
 
     popd
-    call :delete_test_workspace|| (echo ERROR: ws deletion for test "%~2" failed>&2& exit /b 1)
+    if %err% == 0 (
+        call :delete_test_workspace|| (
+            echo ERROR: ws deletion for test "%~2" failed>&2
+            exit /b 1
+        )
+    )
 
     endlocal ^
     & set /a "TEST_TOTAL=%TEST_TOTAL%" ^
