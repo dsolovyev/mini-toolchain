@@ -4,7 +4,7 @@ goto %~1
 :test_start
     powershell -Command ^
         Add-AppveyorTest ^
-        -Name $Env:TEST_NAME ^
+        -Name $Env:TEST_NAME_FULL ^
         -FileName "%~2" ^
         -Outcome Running
 exit /b %errorlevel%
@@ -18,7 +18,7 @@ exit /b %errorlevel%
 
     powershell -Command ^
         Update-AppveyorTest ^
-        -Name $Env:TEST_NAME ^
+        -Name $Env:TEST_NAME_FULL ^
         -FileName "%~2" ^
         -Outcome %outcome% ^
         -Duration %~4

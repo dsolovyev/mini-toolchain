@@ -147,6 +147,8 @@ exit /b 0
     echo Running %TEST_NAME% ...
     set /a TEST_TOTAL += 1
 
+    for %%N in ("%~n1") do set "TEST_NAME_FULL=%%~nN.%TEST_NAME%"
+
     call :create_test_workspace "%TEST_WORKSPACE%"|| (echo ERROR: ws creation for test "%~2" failed>&2& exit /b 1)
     pushd "%TEST_WORKSPACE%"|| (echo ERROR: can't change dir to "%TEST_WORKSPACE%">&2& exit /b 1)
 
